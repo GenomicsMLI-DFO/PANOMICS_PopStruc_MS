@@ -1,0 +1,8 @@
+*
+#*.diffs
+#*nDemes*/
+#**/*.RData
+# except
+!.gitignore
+#!*.ini
+#!**/*.png
