@@ -6,7 +6,7 @@ __Main author:__  Audrey Bourret
 __Affiliation:__  Fisheries and Oceans Canada (DFO)   
 __Group:__        Laboratory of genomics   
 __Location:__     Maurice Lamontagne Institute  
-__Affiliated publication:__ Bourret A, Leung C, Puncher GN, Le Corre N, Deslauriers D, Skanes K, Bourdages H, Cassista-Da Ros M, Walkusz W, Jeffery NW, Stanley RRE, Parent GJ (In preparation). Diving into large-scale  population genomics to decipher drivers of structure and climatic vulnerability in a marine invertebrate.
+__Affiliated publication:__ Bourret A, Leung C, Puncher GN, Le Corre N, Deslauriers D, Skanes K, Bourdages H, Cassista-Da Ros M, Walkusz W, Jeffery NW, Stanley RRE, Parent GJ (In preparation). Diving into large-scale  population genomics to decipher drivers of structure and climatic vulnerability in a marine invertebrate.  
 __Contact:__      e-mail: audrey.bourret@dfo-mpo.gc.ca
 
 - [Objective](#objective)
