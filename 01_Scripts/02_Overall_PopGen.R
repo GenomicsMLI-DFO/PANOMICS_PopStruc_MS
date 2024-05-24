@@ -28,7 +28,6 @@ library(adegenet)
 library(hierfstat)
 library(dartR)
 
-
 library(pcadapt)
 #BiocManager::install("qvalue")
 library("qvalue")
@@ -242,7 +241,7 @@ gg.pca.env
 
 gg.env <- ggpubr::ggarrange(gg.r.env,
                             gg.pca.env,
-                            labels = LETTERS,
+                            labels = LETTERS[3:4],
                             widths = c(2,2))
 gg.env
 
@@ -266,7 +265,7 @@ env.change.df <- Env.ras %>% pivot_longer(-Gen_ZONE_FG) %>%
          Region = factor(Region, levels = c("Northern", "NFL", "GSL", "Scotian", "3M")),
         new.ID = factor(new.ID, levels = c("BT-w", "BT-s", "SST-l", "BS-a", "SSS-a"))) 
 
-env.change.gg2 <- env.change.df %>% ggplot(aes(x = Region, y = value.current)) +
+env.change.gg1 <- env.change.df %>% ggplot(aes(x = Region, y = value.current)) +
   geom_boxplot(col = "darkgray") +
   geom_jitter(aes(col = Region), alpha = 0.5, height = 0)+
   facet_wrap(~new.ID, scale = "free", nrow = 1) +
@@ -277,19 +276,34 @@ env.change.gg2 <- env.change.df %>% ggplot(aes(x = Region, y = value.current)) +
   theme_bw(base_size = 8) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         legend.position = "none", strip.background = element_rect(fill="white"))
+env.change.gg1 
+
+
+env.change.gg2 <- env.change.df %>% ggplot(aes(x = Region, y = value.future)) +
+  geom_boxplot(col = "darkgray") +
+  geom_jitter(aes(col = Region), alpha = 0.5, height = 0)+
+  facet_wrap(~new.ID, scale = "free", nrow = 1) +
+  scale_color_manual(name = "Region", values = c("black","blue", "darkorange","red", "magenta"),
+                     labels = c("ARC", "NFL", "GSL", "SS", "FLC"))  + 
+  scale_x_discrete(labels = c("ARC", "NFL", "GSL", "SS", "FLC")) +
+  labs(x= "", y = "Future value (°C or ppm)") +
+  theme_bw(base_size = 8) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        legend.position = "none", strip.background = element_rect(fill="white"))
 env.change.gg2 
 
- env.change.gg.big2 <- ggarrange(gg.env,
-                                env.change.gg2,
-                                nrow = 2, ncol = 1, align = "hv", labels = c("", LETTERS[3:10]),
-                                heights = c(2,1)
+ env.change.gg.big2 <- ggarrange( env.change.gg1,
+                                  env.change.gg2,
+                                  gg.env,
+                                nrow = 3, ncol = 1, align = "hv", labels = c(LETTERS[1:2], ""),
+                                heights = c(1,1,2)
  )
  
  env.change.gg.big2
  
 ggsave(plot = env.change.gg.big2,
-       filename = "02_Results/01_Overall_PopGen/Raw_EnvData_20231017.png",
-      height = 6, width = 8, units = "in", bg = "white")
+       filename = "02_Results/01_Overall_PopGen/Raw_EnvData_20240524.png",
+      height = 8, width = 8, units = "in", bg = "white")
 
 
 # Identify outliers #1 - Bayescan ----------------------------------------------------------------
@@ -3227,6 +3241,25 @@ ggsave(plot = gg.eems.m.all,
 
 # Admixture - ALL ---------------------------------------------------------------
 
+
+# function to plot CV
+CV.plot <- function(df){
+  gg <- df %>% mutate(CV = as.numeric(as.character(CV)),
+                      color = ifelse(CV == min(.$CV), "red", "black")) %>% 
+    ggplot(aes(x = factor(k), y = CV)) + 
+    geom_point(size = 2, aes(col = color)) +
+    scale_color_manual(values = c("black", "red")) +
+    labs(x = "K", y = "Cross-validation error") +
+    #facet_wrap(~"All snps") +
+    theme_bw() +
+    theme(legend.position = "none",
+          strip.background = element_rect(fill = "white")) 
+  
+  return(gg)
+}
+
+
+
 current.wd <- here::here()
 
 # Original SNP
@@ -3293,7 +3326,7 @@ for(i in 1:nrow(CV.all.res)){
 CV.all.res$CV <- as.numeric(as.character(CV.all.res$CV))
 
 
-gg.CV.all <- CV.all.res %>% CV.plot + facet_wrap(~"Complete SNP panel")
+gg.CV.all <- CV.all.res %>%  CV.plot + facet_wrap(~"Complete SNP panel")
 gg.CV.all
 
 
@@ -3322,12 +3355,24 @@ Q.res <- cbind(all.fam$V1, Q.res)
 
 names(Q.res) <- c("ID_GQ", "Q1", "Q2", "Q3", "Q4")
 
-gg.admix.k4 <- Q.res %>% pivot_longer(cols = c("Q1", "Q2", "Q3", "Q4"), names_to = "Group", values_to = "Q") %>% 
+gg.admix.k4 <- Q.res %>% 
+  mutate(MaxQ = Q4) %>%  
+  pivot_longer(cols = c("Q1", "Q2", "Q3", "Q4"), names_to = "Group", values_to = "Q") %>% 
  mutate(Group = factor(Group, levels = c("Q1","Q3", "Q2", "Q4"))) %>% 
   left_join(pop.data) %>% 
-  ggplot(aes(x = ID_GQ, y = Q, fill = Group)) + 
+  mutate( RegionAssesment = factor(RegionAssesment, levels = c("Northern", "NFL", "GSL", "Scotian", "NAFO-3M")),
+          Region = ifelse(RegionAssesment == "Northern", "ARC",
+                          ifelse(RegionAssesment == "Scotian", "SS",
+                          ifelse(RegionAssesment == "NAFO-3M", "FLC", as.character(RegionAssesment)))),
+          Region2 = paste(Region, str_remove(Gen_ZONE, "NAFO-"), sep = ": "),
+          Region2 = factor(Region2, levels = c("ARC: WAZ", "ARC: EAZ", "NFL: SFA-4", "NFL: SFA-5","NFL: SFA-6","NFL: SFA-7",
+                                               "GSL: SFA-8", "GSL: SFA-9", "GSL: SFA-10", "GSL: SFA-11", "GSL: SFA-12", 
+                                               "SS: SFA-13", "SS: SFA-14", "SS: SFA-15", "SS: SFA-16", "FLC: 3M" )
+                                               )) %>% 
+
+  ggplot(aes(x = reorder(ID_GQ, MaxQ, median ), y = Q, fill = Group)) + 
   geom_bar(stat="identity") +
-  facet_grid(.~ Gen_ZONE, space = "free", scale = "free", switch = "x") +
+  facet_grid(.~Region2, space = "free", scale = "free", switch = "x") +
  scale_fill_manual(values = c( "magenta", "orange",  "deepskyblue", "blue")) +
   labs(y="Membership probability") +
   theme_minimal( base_size = 11) + 
@@ -3352,65 +3397,6 @@ gg.admix.k4
 ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen" ,"10_Admixture", "Admixture.global.k4.byArea.png"), 
        plot = gg.admix.k4,
        height = 3.5, width = 12, units = "in")   
-
-
-
-
-Q.pie <- Q.res %>% pivot_longer(cols = c("Q1", "Q2", "Q3", "Q4"), names_to = "Group", values_to = "Q") %>% 
-  mutate(Group = factor(Group, levels = c("Q1","Q3", "Q2", "Q4"))) %>% 
-  left_join(pop.data) %>% 
-  group_by(Gen_ZONE_FG, Group) %>% 
-  summarise(value = mean(Q),
-            N = n(),
-            Lat = mean(Lat),
-            Long = mean(Long))
-
-library(scatterpie)
-gg.map <- ggplot() + 
-   geom_sf(data = admin, fill=NA, size=0.1) +
-geom_scatterpie(aes(x=Long, y=Lat, group = Gen_ZONE_FG, r = N/60), 
-                data = Q.pie, cols = "Group",  long_format = T) +
-  coord_sf(xlim = c(-70, -43), ylim = c(43, 68), expand = FALSE) +
-  xlab("Longitude") + ylab("Latitude") +
-  theme_bw(base_size = 11, base_family = "Times") +
-  theme(panel.grid = element_blank(), plot.background = element_blank(), panel.background = element_blank(), strip.text = element_text(size=11))
-
-  
-
-gg.map + geom_scatterpie(aes(x=Long, y=Lat, group = Gen_ZONE_FG, r = N/60), 
-                data = Q.pie, cols = "Group",  long_format = T) 
-
-
-
-ggpubr::ggarrange(  ggarrange(gPCA.final.14331snps + theme(legend.position = "none"),
-                              gg.pca.all + theme(legend.position = "none"), 
-                              het.gg.area + theme(legend.position = "bottom"),
-                              g1.fst,  
-                             
-                              nrow =1, ncol = 4, labels = LETTERS,
-                              widths = c(1,1,1,2)), 
-                    gg.admix.k4, nrow=2, ncol = 1, labels = c("", "E"))
-
-
-gg.pop.struct <- ggpubr::ggarrange(  ggarrange(gPCA.final.14331snps + theme(legend.position = "none"
-                                                                           ) ,
-                              gPCA.final.Neutralsnps+ theme(legend.position = "none"), 
-                              gPCA.final.OutlierHighsnps + theme(legend.position = "none"),
-                              het.gg.area + theme(legend.position = "right"),
-                              #g1.fst,  
-                              
-                              nrow =1, ncol = 4, labels = LETTERS,
-                              widths = c(1,1,1,2)), 
-                    gg.admix.k4, nrow=2, ncol = 1, labels = c("", "E"),
-                    heights = c(2,3))
-
-gg.pop.struct
-
-ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen" , "Fig2.popstruct.png"), 
-       plot = gg.pop.struct,
-       height = 5, width = 12, units = "in")   
-
-gg.pop.struct 
 
 
 # Admixture - Outlier ------ ----------------------------------------------
@@ -3464,7 +3450,7 @@ bed.file <- file.path(here::here(), "./02_Results/01_Overall_PopGen/10_Admixture
 fam.file <- bed.file %>% str_replace(".bed", ".fam")
 fam <- read.table(fam.file)
 
-for(k in 17:20){
+for(k in 1:20){
   
   print(k)  
   
@@ -3535,12 +3521,22 @@ Q.outliers.res <- cbind(fam$V1, Q.outliers.res)
 
 names(Q.outliers.res) <- c("ID_GQ", paste0("Q", 1:k))
 
-gg.admix.k4.outlier <- Q.outliers.res %>% pivot_longer(cols =  paste0("Q", 1:k), names_to = "Group", values_to = "Q") %>% 
+gg.admix.k4.outlier <- Q.outliers.res %>% mutate(MaxQ = Q4) %>%  
+  pivot_longer(cols =  paste0("Q", 1:k), names_to = "Group", values_to = "Q") %>% 
   mutate(Group = factor(Group, levels = paste0("Q", 1:k))) %>% 
   left_join(pop.data) %>% 
-  ggplot(aes(x = ID_GQ, y = Q, fill = Group)) + 
+  mutate( RegionAssesment = factor(RegionAssesment, levels = c("Northern", "NFL", "GSL", "Scotian", "NAFO-3M")),
+          Region = ifelse(RegionAssesment == "Northern", "ARC",
+                          ifelse(RegionAssesment == "Scotian", "SS",
+                                 ifelse(RegionAssesment == "NAFO-3M", "FLC", as.character(RegionAssesment)))),
+          Region2 = paste(Region, str_remove(Gen_ZONE, "NAFO-"), sep = ": "),
+          Region2 = factor(Region2, levels = c("ARC: WAZ", "ARC: EAZ", "NFL: SFA-4", "NFL: SFA-5","NFL: SFA-6","NFL: SFA-7",
+                                               "GSL: SFA-8", "GSL: SFA-9", "GSL: SFA-10", "GSL: SFA-11", "GSL: SFA-12", 
+                                               "SS: SFA-13", "SS: SFA-14", "SS: SFA-15", "SS: SFA-16", "FLC: 3M" )
+          )) %>%   
+  ggplot(aes(x = reorder(ID_GQ, MaxQ, median ), y = Q, fill = Group)) + 
   geom_bar(stat="identity") +
-  facet_grid(.~ Gen_ZONE, space = "free", scale = "free", switch = "x") +
+  facet_grid(.~ Region2, space = "free", scale = "free", switch = "x") +
   scale_fill_manual(values = c( "magenta", "orange",  "deepskyblue", "blue")) +
   labs(y="Membership probability") +
   theme_minimal( base_size = 11) + 
@@ -3615,7 +3611,7 @@ neutral.bed.file <- file.path(here::here(), "./02_Results/01_Overall_PopGen/10_A
 neutral.fam.file <- neutral.bed.file %>% str_replace(".bed", ".fam")
 neutral.fam <- read.table(neutral.fam.file)
 
-for(k in 11:20){
+for(k in 1:20){
   
   print(k)  
   
@@ -3676,12 +3672,21 @@ Q.neutral.res <- cbind(neutral.fam$V1, Q.neutral.res)
 
 names(Q.neutral.res) <- c("ID_GQ", paste0("Q", 1:k))
 
-gg.admix.k3.neutral <- Q.neutral.res %>% pivot_longer(cols =  paste0("Q", 1:k), names_to = "Group", values_to = "Q") %>% 
+gg.admix.k3.neutral <- Q.neutral.res %>%   mutate(MaxQ = Q3) %>%  
+  pivot_longer(cols =  paste0("Q", 1:k), names_to = "Group", values_to = "Q") %>% 
   mutate(Group = factor(Group, levels = paste0("Q", 1:k))) %>% 
   left_join(pop.data) %>% 
-  ggplot(aes(x = ID_GQ, y = Q, fill = Group)) + 
+  mutate( RegionAssesment = factor(RegionAssesment, levels = c("Northern", "NFL", "GSL", "Scotian", "NAFO-3M")),
+          Region = ifelse(RegionAssesment == "Northern", "ARC",
+                          ifelse(RegionAssesment == "Scotian", "SS",
+                                 ifelse(RegionAssesment == "NAFO-3M", "FLC", as.character(RegionAssesment)))),
+          Region2 = paste(Region, str_remove(Gen_ZONE, "NAFO-"), sep = ": "),
+          Region2 = factor(Region2, levels = c("ARC: WAZ", "ARC: EAZ", "NFL: SFA-4", "NFL: SFA-5","NFL: SFA-6","NFL: SFA-7",
+                                               "GSL: SFA-8", "GSL: SFA-9", "GSL: SFA-10", "GSL: SFA-11", "GSL: SFA-12", 
+                                               "SS: SFA-13", "SS: SFA-14", "SS: SFA-15", "SS: SFA-16", "FLC: 3M" )
+          )) %>%   ggplot(aes(x = reorder(ID_GQ, MaxQ, median ), y = Q, fill = Group)) + 
   geom_bar(stat="identity") +
-  facet_grid(.~ Gen_ZONE, space = "free", scale = "free", switch = "x") +
+  facet_grid(.~ Region2, space = "free", scale = "free", switch = "x") +
   scale_fill_manual(values = c( "magenta", "orange",  "deepskyblue")) +
   labs(y="Membership probability") +
   theme_minimal( base_size = 11) + 
@@ -3700,7 +3705,7 @@ gg.admix.k3.neutral <- Q.neutral.res %>% pivot_longer(cols =  paste0("Q", 1:k), 
         
         plot.margin = margin(t = 20, r = 10, b = 10, l = 10, unit = "pt") )
 
-
+gg.admix.k3.neutral
 
 # Admixture - Figures -----------------------------------------------------
 
@@ -3710,14 +3715,13 @@ gg.admix.3 <-  ggarrange(ggarrange(gg.CV.all, gg.CV.neutral, gg.CV.outlier,
                          gg.admix.k4 + ggtitle("Complete SNPs panel (K = 4)"), 
                          gg.admix.k3.neutral + ggtitle("Neutral SNP panel (K = 3)"),
                          gg.admix.k4.outlier + ggtitle("Outlier SNP panel (K = 4)"),
-                         nrow = 4, ncol = 1, labels = LETTERS, heights = c(3,4,4,4)
+                         nrow = 4, ncol = 1, labels = LETTERS, heights = c(3,5,5,5)
 )
 
 gg.admix.3
 
 
-
-ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "PopStruct_Admixture_Complete_Neutral_outlier_20231017.png"), 
+ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "PopStruct_Admixture_Complete_Neutral_outlier_20240524.png"), 
        plot = gg.admix.3,
-       height = 10, width = 12, units = "in", bg = "white")   
+       height = 12, width = 12, units = "in", bg = "white")   
 
