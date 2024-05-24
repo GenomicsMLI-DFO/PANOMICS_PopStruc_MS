@@ -1,6 +1,7 @@
 # R scripts, figures and results of the Northern shrimp population genomic MS
 ## Diving into large-scale  population genomics to decipher drivers of structure and climatic vulnerability in a marine invertebrate
 
+[![DOI](https://zenodo.org/badge/745501434.svg)](https://zenodo.org/doi/10.5281/zenodo.11287665)
 
 __Main author:__  Audrey Bourret  
 __Affiliation:__  Fisheries and Oceans Canada (DFO)   
