@@ -44,15 +44,15 @@ library(vegan)
 
 #Libraries that we will need
 library(codep)
-library(adespatial)
+#library(adespatial)
 library(adegraphics)
 library(ape)
 library(car)
 
 
 library(raster)
-library(rgdal)
-library(rgeos)
+#library(rgdal)
+#library(rgeos)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
@@ -1807,6 +1807,10 @@ ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "Po
        plot = gg.popstruc.1,
        height = 8, width = 6, units = "in", bg = "white")   
 
+ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "PopStruct_NeutralvsOutliers_20240526.pdf"), 
+       plot = gg.popstruc.1,
+       height = 8, width = 6, units = "in", bg = "white")   
+
 
 gg.popstruc.2 <- ggpubr::ggarrange(gPCA.final.14331snps + theme(legend.position = "none") +
                                      scale_color_manual(name = "Region", values = c("black","blue", "darkorange","red", "magenta"),
@@ -1909,13 +1913,13 @@ RsquareAdj(mod)
 #s.value(Coor.sites, dbmem.sites[,1:4])
 ##MEM can be used in stats like any other explanatory variables
 
-RDA0 <- rda(freq.MAF.final.Gen_ZONE_FG ~ 1,  MEM.df) 
+#RDA0 <- rda(freq.MAF.final.Gen_ZONE_FG ~ 1,  MEM.df) 
 
 ## Full model
-RDAfull <- rda(freq.MAF.final.Gen_ZONE_FG ~ . , MEM.df )
+#RDAfull <- rda(freq.MAF.final.Gen_ZONE_FG ~ . , MEM.df )
 
-mod <- ordiR2step(RDA0, RDAfull, Pin = 0.01, R2permutations = 1000, R2scope = T)
-mod
+#mod <- ordiR2step(RDA0, RDAfull, Pin = 0.01, R2permutations = 1000, R2scope = T)
+#mod
 
 # MEM1 + MEM3
 
@@ -2143,7 +2147,8 @@ gbiplot.enr
 newproj  = "+proj=lcc +lat_1=60 +lat_2=46 +lat_0=44 +lon_0=-68.5 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs "
   
 ## Species range shapefile (download information at beginning of tutorial)
-range <- readOGR("./00_Data/99_SIG/range2.shp") 
+range <-  terra::vect("./00_Data/99_SIG/range2.shp")
+range <- as(range, "Spatial")
 crs(range) <- '+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
 
 res_RDA_proj_current <- adaptive_index(RDA = RDA_outliers, K = 2, env_pres = ras_current,  range = range, method = "loadings", scale_env = scale_env, center_env = center_env)
@@ -2180,14 +2185,14 @@ TAB_RDA_current$model <- "Present"
 # SFA
 
 SFA.shp <- terra::vect("00_Data/99_SIG/SFA.shp")
-Region.shp <-  terra::vect("00_Data/99_SIG/Regions_MS_corrected.shp")
+Region.shp <-  terra::vect("00_Data/99_SIG/Regions_MS_final.shp")
 
 
 #SFA.shp <- rgdal::readOGR("00_Data/01_SIG/SFA.shp")
 
 # reproject data
-SFA2.shp <- spTransform(SFA.shp,
-                        "+proj=lcc +lat_1=60 +lat_2=46 +lat_0=44 +lon_0=-68.5 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+#SFA2.shp <- spTransform(SFA.shp,
+#                        "+proj=lcc +lat_1=60 +lat_2=46 +lat_0=44 +lon_0=-68.5 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
 plot(SFA.shp,
      main = "Shapefile imported into R - SFA",
@@ -2196,7 +2201,7 @@ plot(SFA.shp,
 
 SFA.shp
 
-SFA_df <- fortify(SFA2.shp)
+#SFA_df <- fortify(SFA2.shp)
 
 bind_rows(TAB_RDA_current, TAB_RDA_future) %>%  ggplot(aes(x = value)) +
   geom_density(aes(col = model))+
@@ -2222,7 +2227,7 @@ future.RDA1 <- bind_rows(TAB_RDA_current, TAB_RDA_future) %>% filter(value < 8,
 #            color = "gray25", size = .2) +
   
     
-  geom_sf(data = SFA.shp,  color = "gray25", lwd = 0.1, fill = NA) +
+  geom_sf(data = SFA.shp,  color = "gray50", lwd = 0.1, fill = NA) +
   
   # REGION
   geom_sf(data = Region.shp, # color = c("black","magenta", "darkorange","blue","red"),
@@ -2234,8 +2239,8 @@ future.RDA1 <- bind_rows(TAB_RDA_current, TAB_RDA_future) %>% filter(value < 8,
                # col = rep(c("black","magenta", "darkorange","blue","red"),2),
                 fill = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-300000),
-                nudge_y = c(-900000,650000,100000,800000,220000)) +
+               nudge_x = c(400000,-200000,-150000,-300000,-300000),
+               nudge_y = c(-800000,800000,650000,100000,220000)) +
   
   #coord_sf(xlim = c(-70, -43), ylim = c(43, 68), expand = FALSE) +
   xlab("Longitude") + ylab("Latitude") +
@@ -2301,7 +2306,7 @@ future.RDA2 <- bind_rows(TAB_RDA_current, TAB_RDA_future) %>% filter(value < 5,
   #            color = "gray25", size = .2) +
   
   
-  geom_sf(data = SFA.shp,  color = "gray25", lwd = 0.1, fill = NA) +
+  geom_sf(data = SFA.shp,  color = "gray50", lwd = 0.1, fill = NA) +
   
   # REGION
   geom_sf(data = Region.shp, # color = c("black","magenta", "darkorange","blue","red"),
@@ -2312,8 +2317,8 @@ future.RDA2 <- bind_rows(TAB_RDA_current, TAB_RDA_future) %>% filter(value < 5,
                # col = rep(c("black","magenta", "darkorange","blue","red"),2),
                 fill = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-300000),
-                nudge_y = c(-900000,650000,100000,800000,220000)) +
+                nudge_x = c(400000,-200000,-150000,-300000,-300000),
+                nudge_y = c(-800000,800000,650000,100000,220000)) +
   
   
   coord_sf(xlim = c(-20000, 1850000), ylim = c(-50000, 2650000), crs = sf::st_crs("EPSG:6622")) +
@@ -2361,7 +2366,7 @@ venn.out <-  ggVennDiagram(list( putative.BayesOutliers.final, as.character(outl
                            category.names = c("BayeScan","pRDA",  "pcadapt")) +
   ggplot2::scale_fill_gradient(name = "N snps", low="white",high = "pink", limits = c(0,650)) +
   ggplot2::scale_color_manual(values = rep("darkgray", 10)) +
-  scale_x_continuous(limits = c(-100, 1100)) +
+  scale_x_continuous(limits = c(-7, 10)) +
   facet_wrap(~"Outliers vs adaptive SNPs") + theme_bw(base_size = 11) +
   theme(axis.ticks = element_blank(),
         #axis.line = element_blanline(colour = "grey50"),
@@ -2395,6 +2400,10 @@ gg.BIG.adapt2 <- ggarrange(ggRDA <- ggarrange( gbiplot + theme(legend.position =
 gg.BIG.adapt2
 
 ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "Adaptative.landscape_BIG3.png"), 
+       plot =gg.BIG.adapt2, bg = "white",
+       height = 8, width = 6.5, units = "in") 
+
+ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "Adaptative.landscape_BIG3.pdf"), 
        plot =gg.BIG.adapt2, bg = "white",
        height = 8, width = 6.5, units = "in") 
 
@@ -2649,7 +2658,7 @@ gg.offset.map <- ggplot(data = RDA_proj_offset) +
   #            color = "gray25", size = .2) +
   
   
-  geom_sf(data = SFA.shp,  color = "gray25", lwd = 0.1, fill = NA) +
+  geom_sf(data = SFA.shp,  color = "gray50", lwd = 0.1, fill = NA) +
 
   # REGION
   geom_sf(data = Region.shp, # color = c("black","magenta", "darkorange","blue","red"),
@@ -2662,11 +2671,11 @@ gg.offset.map <- ggplot(data = RDA_proj_offset) +
   coord_sf(xlim = c(-20000, 1850000), ylim = c(-50000, 2650000), crs = sf::st_crs("EPSG:6622")) +
   
   geom_sf_label(data = Region.shp, aes(label = layer),
-                col = c("black","magenta", "darkorange","blue","red"),
+                col = c("black","blue","magenta", "darkorange","red"),
                 fill = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-300000),
-                nudge_y = c(-900000,650000,100000,800000,220000)) +
+                nudge_x = c(400000,-200000,-150000,-300000,-300000),
+                nudge_y = c(-800000,800000,650000,100000,220000)) +
   
   
   xlab("Longitude") + ylab("Latitude") +
@@ -2739,6 +2748,10 @@ gg.evol <- ggpubr::ggarrange(gg.offset.map + theme(legend.position = "bottom",
 gg.evol
 
 ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "Fig6_evolution_20231017.png"), 
+       plot = gg.evol, bg = "white",
+       height = 6, width = 7, units = "in") 
+
+ggsave(filename = file.path(here::here(), "02_Results", "01_Overall_PopGen", "Fig6_evolution_20231017.pdf"), 
        plot = gg.evol, bg = "white",
        height = 6, width = 7, units = "in") 
 
@@ -2915,6 +2928,7 @@ i <- 1:3 # mix the results from the 3 chains
 
 crop_extent <- rgdal::readOGR("00_Data/99_SIG/range2.shp")
 
+
 plot(crop_extent,
      main = "Shapefile imported into R - crop extent",
      axes = TRUE,
@@ -3019,7 +3033,7 @@ admin <- terra::vect(rnaturalearth::ne_countries(scale = "medium", continent = c
 # SFA
 
 SFA.shp <- terra::vect("00_Data/99_SIG/SFA.shp")
-Region.shp <-  terra::vect("00_Data/99_SIG/Regions_MS_corrected.shp")
+Region.shp <-  terra::vect("00_Data/99_SIG/Regions_MS_final.shp")
 
 
 # Try a graph
@@ -3070,11 +3084,11 @@ gg.eems.m.all <- ggplot() +
           color = "gray25",
           lwd = 0.5, fill = NA) +  
   geom_sf_label(data = Region.shp, aes(label = layer),
-                fill = c("black","magenta", "darkorange","blue","red"),
+                fill = c("black","blue","magenta", "darkorange","red"),
                 col = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-150000),
-                nudge_y = c(-900000,650000,100000,800000,-50000)) +
+                nudge_x = c(500000,-200000,-150000,-300000,-100000),
+                nudge_y = c(-800000,800000,650000,100000,-50000)) +
   # Map limits
   scale_size_continuous( range = c(0.5, 3)) +
   coord_sf(xlim = c(-20000, 1850000), ylim = c(-50000, 2650000), crs = sf::st_crs("EPSG:6622")) +
@@ -3136,11 +3150,11 @@ gg.eems.m.neutral <-ggplot() +
           color = "gray25",
           lwd = 0.5, fill = NA) +  
   geom_sf_label(data = Region.shp, aes(label = layer),
-                fill = c("black","magenta", "darkorange","blue","red"),
+                fill = c("black","blue","magenta", "darkorange","red"),
                 col = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-150000),
-                nudge_y = c(-900000,650000,100000,800000,-50000)) +
+                nudge_x = c(500000,-200000,-150000,-300000,-100000),
+                nudge_y = c(-800000,800000,650000,100000,-50000)) +
   scale_size_continuous( range = c(0.5, 3)) +
   coord_sf(xlim = c(-20000, 1850000), ylim = c(-50000, 2650000), crs = sf::st_crs("EPSG:6622")) +
   #coord_sf( crs = sf::st_crs("EPSG:6622"))+
@@ -3200,11 +3214,11 @@ gg.eems.m.outlier <-ggplot() +
           color = "gray25",
           lwd = 0.5, fill = NA) +  
   geom_sf_label(data = Region.shp, aes(label = layer),
-                fill = c("black","magenta", "darkorange","blue","red"),
+                fill = c("black","blue","magenta", "darkorange","red"),
                 col = "white",
                 alpha = 0.75,
-                nudge_x = c(400000,-150000,-300000,-200000,-150000),
-                nudge_y = c(-900000,650000,100000,800000,-50000)) +
+                nudge_x = c(500000,-200000,-150000,-300000,-100000),
+                nudge_y = c(-800000,800000,650000,100000,-50000)) +
   # Map limits
   scale_size_continuous( range = c(0.5, 3)) +
   coord_sf(xlim = c(-20000, 1850000), ylim = c(-50000, 2650000), crs = sf::st_crs("EPSG:6622")) +
@@ -3231,12 +3245,15 @@ gg.eems.m1 <- ggarrange(gg.eems.m.neutral, gg.eems.m.outlier ,
 gg.eems.m1
 
 ggsave(plot = gg.eems.m1 + theme(plot.margin = margin(0,5,0,0, "mm")),
-       filename = "02_Results/01_Overall_PopGen/EEMS_migration_20231006.png",
+       filename = "02_Results/01_Overall_PopGen/EEMS_migration_20240526.png",
+       height = 6, width = 10, units = "in", bg = "white")
+ggsave(plot = gg.eems.m1 + theme(plot.margin = margin(0,5,0,0, "mm")),
+       filename = "02_Results/01_Overall_PopGen/EEMS_migration_20240526.pdf",
        height = 6, width = 10, units = "in", bg = "white")
 
 
 ggsave(plot = gg.eems.m.all,
-       filename = "02_Results/01_Overall_PopGen/EEMS_migration_ALL_20231006.png",
+       filename = "02_Results/01_Overall_PopGen/EEMS_migration_ALL_20240526.png",
        height = 6, width = 6, units = "in", bg = "white")
 
 # Admixture - ALL ---------------------------------------------------------------
